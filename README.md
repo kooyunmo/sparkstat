@@ -16,8 +16,11 @@ Real-time GPU monitoring for NVIDIA DGX Spark and other unified memory (UMA) sys
 
 ```bash
 pip install sparkstat
-pipx install sparkstat
-uv tool install sparkstat
+```
+
+Or via the installation script:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/kooyunmo/sparkstat/main/install.sh | sh
 ```
 
