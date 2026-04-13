@@ -1,44 +1,23 @@
 # sparkstat
 
-A real-time GPU monitor for NVIDIA DGX Spark and other unified memory architecture (UMA) systems.
+Real-time GPU monitoring for NVIDIA DGX Spark and other unified memory (UMA) systems.
 
-Unlike `gpustat` or `nvidia-smi`, which report "Memory-Usage: Not Supported" on iGPU/UMA systems, `sparkstat` combines `nvidia-smi` metrics with `/proc/meminfo` to provide an accurate view of system memory available to GPU workloads.
+`sparkstat` fills the gap left by `nvidia-smi` and `gpustat` on iGPU/UMA machines by combining GPU metrics with `/proc/meminfo` to show memory that is actually available to GPU workloads.
 
-## Key Features
-
-*   **DRAM Monitoring**: Color-coded usage bars (green/yellow/red) based on severity.
-*   **Effective Available Memory**: Calculates real GPU-allocatable memory (DRAM available + swap free).
-*   **GPU Metrics**: Utilization, temperature (color-coded), power, clock speed, and P-State.
-*   **Alloc Metric**: Reports GPU-allocated memory as a percentage of total DRAM, replacing the typically zeroed `utilization.memory` metric on iGPUs.
-*   **Process Breakdown**: Per-process GPU memory allocation.
-*   **Flexible Output**: Full-screen in-place refresh on TTY, sequential output when piped.
-*   **Zero Dependencies**: Pure Python, using only the standard library.
+![sparkstat screenshot](./sparkstat.png)
 
 ## Requirements
 
-*   Linux
-*   Python 3.9+
-*   NVIDIA driver (`nvidia-smi`)
+- Linux
+- Python 3.9+
+- NVIDIA driver with `nvidia-smi`
 
-## Installation
+## Install
 
-Install via pip:
 ```bash
 pip install sparkstat
-```
-
-Install via pipx:
-```bash
 pipx install sparkstat
-```
-
-Install via uv:
-```bash
 uv tool install sparkstat
-```
-
-Quick install script:
-```bash
 curl -fsSL https://raw.githubusercontent.com/kooyunmo/sparkstat/main/install.sh | sh
 ```
 
@@ -46,17 +25,12 @@ curl -fsSL https://raw.githubusercontent.com/kooyunmo/sparkstat/main/install.sh 
 
 ```bash
 sparkstat           # Single snapshot
-sparkstat -i        # Watch mode, default 3s interval
-sparkstat -i 1      # Watch mode, 1s interval
-sparkstat -i 0      # Single snapshot (same as no -i)
+sparkstat -i        # Watch mode (3s interval)
+sparkstat -i 1      # Watch mode (1s interval)
 sparkstat --no-proc # Hide process list
-sparkstat --no-header # Suppress timestamp header
-sparkstat --no-color  # Disable color
-sparkstat --force-color # Force color when piped
-sparkstat -v        # Show version
 ```
 
-## Example Output
+## Example output
 
 ```text
 spark-838f      Fri Apr 10 01:05:26 2026  NVIDIA GB10
@@ -76,23 +50,13 @@ spark-838f      Fri Apr 10 01:05:26 2026  NVIDIA GB10
 ═════════════════════════════════════════════════════════
 ```
 
-## Color Scheme
+## What it shows
 
-*   **Bars**: Green <50%, Yellow 50-80%, Red >80%
-*   **Temperature**: Cyan <50°C, Yellow 50-70°C, Red >70°C
-*   **GPU Utilization**: Dim <10%, Green 10-50%, Yellow 50-80%, Red >80%
-*   **Labels**: Bold white
-*   **GPU Name**: Bold green
-*   **Process Names & Clock**: Cyan
-*   **Power**: Yellow
-*   **Borders**: Dim gray
-
-Colors are automatically disabled when output is piped. Use `--force-color` to override this behavior.
+- DRAM and swap usage
+- Effective available memory for GPU workloads
+- GPU utilization, temperature, power, clock, and P-State
+- Per-process GPU allocation
 
 ## License
 
 MIT
-
-## Repository
-
-https://github.com/kooyunmo/sparkstat
