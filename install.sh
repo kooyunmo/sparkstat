@@ -20,8 +20,10 @@ log_ok() { printf "${GREEN}%s${NC}\n" "$1"; }
 PY_BIN=""
 for cmd in python3 python; do
     if command -v "$cmd" >/dev/null 2>&1; then
-        VER=$( "$cmd" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "0.0" )
-        if [ "$(printf "%.1f" "$VER" | cut -d. -f1)" -ge 3 ] && [ "$(printf "%.1f" "$VER" | cut -d. -f2)" -ge 9 ]; then
+        VER=$( "$cmd" -c 'import sys; print(f"{sys.version_info.major} {sys.version_info.minor}")' 2>/dev/null || echo "0 0" )
+        MAJOR=$(echo "$VER" | cut -d' ' -f1)
+        MINOR=$(echo "$VER" | cut -d' ' -f2)
+        if [ "$MAJOR" -ge 3 ] && [ "$MINOR" -ge 9 ]; then
             PY_BIN="$cmd"
             break
         fi
