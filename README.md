@@ -2,7 +2,7 @@
 
 Real-time GPU monitoring for NVIDIA DGX Spark and other unified memory (UMA) systems.
 
-`sparkstat` fills the gap left by `nvidia-smi` and `gpustat` on iGPU/UMA machines by combining GPU metrics with `/proc/meminfo` to show memory that is actually available to GPU workloads.
+`sparkstat` fills the gap left by `nvidia-smi` and `gpustat` on iGPU/UMA machines. On these platforms, `nvidia-smi` typically reports “Memory-Usage: Not Supported” because iGPUs do not have dedicated framebuffer memory. By combining GPU metrics with `/proc/meminfo`, `sparkstat` shows memory that is actually available to GPU workloads.
 
 ![sparkstat screenshot](./assets/sparkstat.png)
 
