@@ -114,6 +114,9 @@ class MemInfo:
     hugepages_total: int = 0
     hugepages_free: int = 0
     hugepages_size_kib: int = 0
+    pressure_full: float = 0.0
+    pswpin_delta: int = 0
+    pswpout_delta: int = 0
 
 
 @dataclass
@@ -126,6 +129,7 @@ class GPUInfo:
     power_limit: Optional[float]
     clock_sm: Optional[int]
     pstate: str
+    efficiency: float = 0.0
 
 
 @dataclass
@@ -145,6 +149,34 @@ def read_meminfo() -> MemInfo:
                 val = int(parts[1])
                 info[key] = val
 
+    pressure_full = 0.0
+    try:
+        with open("/proc/pressure/memory", "r") as f:
+            for line in f:
+                if line.startswith("full"):
+                    # Format: full avg10=0.00 avg60=0.00 avg300=0.00
+                    parts = line.split()
+                    for p in parts:
+                        if p.startswith("avg10="):
+                            pressure_full = float(p.split("=")[1])
+                    break
+    except (FileNotFoundError, ValueError, IndexError):
+        pass
+
+    pswpin = 0
+    pswpout = 0
+    try:
+        with open("/proc/vmstat", "r") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 2:
+                    if parts[0] == "pswpin":
+                        pswpin = int(parts[1])
+                    elif parts[0] == "pswpout":
+                        pswpout = int(parts[1])
+    except (FileNotFoundError, ValueError):
+        pass
+
     return MemInfo(
         total_kib=info.get("MemTotal", 0),
         available_kib=info.get("MemAvailable", 0),
@@ -153,6 +185,9 @@ def read_meminfo() -> MemInfo:
         hugepages_total=info.get("HugePages_Total", 0),
         hugepages_free=info.get("HugePages_Free", 0),
         hugepages_size_kib=info.get("Hugepagesize", 0),
+        pressure_full=pressure_full,
+        pswpin_delta=pswpin,
+        pswpout_delta=pswpout,
     )
 
 
@@ -215,6 +250,9 @@ def query_gpu() -> GPUInfo:
         power_limit=parse_float(parts[5]),
         clock_sm=parse_int(parts[6]),
         pstate=parts[7] if parts[7] != "[N/A]" else "N/A",
+        efficiency=(parse_int(parts[1]) or 0) / (parse_float(parts[4]) or 1.0)
+        if parse_float(parts[4])
+        else 0.0,
     )
 
 
@@ -289,12 +327,20 @@ def render_once(
         f"{fmt_mib(mem.total_kib)} {c(DIM, 'Unified Memory (UMA)')}"
     )
     lines.append(c(DIM, "─" * width))
+
+    # DRAM line with Pressure indicator
+    pressure_str = ""
+    avail_color = B_WHITE
+    if mem.pressure_full > 0:
+        pressure_str = f" {c(B_RED, f'[!! {mem.pressure_full:.2f}% !!]')}"
+        avail_color = B_RED
+
     lines.append(
         f" {c(B_WHITE, 'DRAM')}  {fmt_pct(used_kib, mem.total_kib)}  "
-        f"{fmt_mib(used_kib)} / {fmt_mib(mem.total_kib)}"
+        f"{fmt_mib(used_kib)} / {fmt_mib(mem.total_kib)}{pressure_str}"
     )
     lines.append(
-        f" {c(B_WHITE, 'Avail')} {fmt_mib(effective_avail)}  "
+        f" {c(avail_color, 'Avail')} {fmt_mib(effective_avail)}  "
         f"{
             c(
                 DIM,
@@ -317,6 +363,7 @@ def render_once(
     temp_str = color_temp(gpu.temperature)
     power_str = f"{gpu.power_draw:.1f}W" if gpu.power_draw is not None else "    N/A"
     clock_str = f"{gpu.clock_sm}MHz" if gpu.clock_sm is not None else "      N/A"
+    eff_str = f"{gpu.efficiency:>5.2f}" if gpu.efficiency > 0 else "  N/A"
 
     lines.append(
         f" {c(B_WHITE, 'Util')}  GPU{util_str}  │  Alloc {alloc_str}  │  "
@@ -326,6 +373,9 @@ def render_once(
         f" {c(B_WHITE, 'Pwr')}   {c(YELLOW, power_str):>7}  │  "
         f"Clk {c(CYAN, clock_str):>9}  │  "
         f"P-State {c(DIM, gpu.pstate)}"
+    )
+    lines.append(
+        f" {c(B_WHITE, 'Eff')}   {c(B_CYAN, eff_str):>7}  │  {c(DIM, 'Util/Watt')}"
     )
 
     if show_procs:
