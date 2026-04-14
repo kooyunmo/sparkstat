@@ -32,7 +32,7 @@ sparkstat = "sparkstat.cli:main"
 
 [tool.hatch.version]
 source = "vcs"
-fallback-version = "0.1.0"
+fallback-version = "0.1.1"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sparkstat"]
